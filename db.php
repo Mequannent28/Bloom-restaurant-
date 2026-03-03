@@ -258,7 +258,14 @@ try {
     // Seed company_info if it's empty
     $check_company = $pdo->query("SELECT COUNT(*) FROM company_info")->fetchColumn();
     if ($check_company == 0) {
-        $pdo->exec("INSERT INTO company_info (company_name, email, phone, address, about_text) VALUES ('Bloom Africa Restaurant', 'info@bloomafrica.com', '+251 900 123 456', 'Addis Ababa, Ethiopia', 'Experience authentic African cuisine.')");
+        $pdo->exec("INSERT INTO company_info (company_name, email, phone, address, about_text, dev_name, dev_email, dev_phone) VALUES ('Bloom Africa Restaurant', 'info@bloomafrica.com', '+251 900 123 456', 'Addis Ababa, Ethiopia', 'Experience authentic African cuisine.', 'Mequannent Gashaw', 'meqalimaz2015@gmail.com', '+251 918 592 028')");
+    }
+
+    // Seed default admin if empty
+    $check_users = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
+    if ($check_users == 0) {
+        $admin_pass = password_hash('admin123', PASSWORD_DEFAULT);
+        $pdo->exec("INSERT INTO users (full_name, email, password, role) VALUES ('System Admin', 'admin@bloomafrica.com', '$admin_pass', 'Admin')");
     }
 
     // Seed tables if empty
