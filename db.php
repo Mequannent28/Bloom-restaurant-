@@ -1,25 +1,44 @@
 <?php
 // Support both local XAMPP and cloud hosting (Render/Railway)
-// 1. Get Environment Variables
-$host = getenv('BLOOM_DB_HOST') ?: '127.0.0.1';
+// 1. Get Environment Variables with robust detection
+$host = getenv('BLOOM_DB_HOST');
 $dbname = getenv('BLOOM_DB_NAME') ?: 'bloom_africa';
 $username = getenv('BLOOM_DB_USER') ?: 'root';
-$password = getenv('BLOOM_DB_PASS') ?: '';
+$password = getenv('BLOOM_DB_PASS'); // Can be empty
 $port = getenv('BLOOM_DB_PORT') ?: '3306';
 
-// 2. Failsafe: Render Internal Network Handling
+// 2. Environment Failsafes
+if (!$host) {
+    // If on Render but BLOOM_DB_HOST is missing, use the service name
+    $host = getenv('RENDER') ? 'mysql' : '127.0.0.1';
+}
+
+// Ensure we NEVER use 'localhost' (which triggers socket files)
+if ($host === 'localhost') {
+    $host = '127.0.0.1';
+}
+
+// 3. Failsafe: Handle injected Render PostgreSQL hosts
 if (strpos($host, 'dpg-') !== false && strpos($host, '.onrender.com') === false) {
     $host = 'mysql';
 }
 
 try {
-    // Specify port and host explicitly to force TCP (avoiding 'No such file or directory' socket errors)
-    $pdo = new PDO("mysql:host=$host;port=$port", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    // Attempt 1: Connect directly to the database (Efficient if DB exists)
+    $dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4";
+    $pdo = new PDO($dsn, $username, $password ?: '');
+} catch (PDOException $e) {
+    // Attempt 2: Connect to host only and create DB (Required for first run)
+    try {
+        $pdo = new PDO("mysql:host=$host;port=$port;charset=utf8mb4", $username, $password ?: '');
+        $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbname` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+        $pdo->exec("USE `$dbname`");
+    } catch (PDOException $e2) {
+        die("Critical: Database connection failed. Host: $host. Error: " . $e2->getMessage());
+    }
+}
 
-    // Create database if not exists
-    $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbname`");
-    $pdo->exec("USE `$dbname`");
+$pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // Create required tables
     $setup_queries = "
