@@ -1,19 +1,20 @@
 <?php
 // Support both local XAMPP and cloud hosting (Render/Railway)
-// 1. Get Environment Variables (Check multiple sources for Render compatibility)
-$host = getenv('BLOOM_DB_HOST') ?: ($_ENV['BLOOM_DB_HOST'] ?? ($_SERVER['BLOOM_DB_HOST'] ?? 'localhost'));
-$dbname = getenv('BLOOM_DB_NAME') ?: ($_ENV['BLOOM_DB_NAME'] ?? ($_SERVER['BLOOM_DB_NAME'] ?? 'bloom_africa'));
-$username = getenv('BLOOM_DB_USER') ?: ($_ENV['BLOOM_DB_USER'] ?? ($_SERVER['BLOOM_DB_USER'] ?? 'root'));
-$password = getenv('BLOOM_DB_PASS') ?: ($_ENV['BLOOM_DB_PASS'] ?? ($_SERVER['BLOOM_DB_PASS'] ?? ''));
+// 1. Get Environment Variables
+$host = getenv('BLOOM_DB_HOST') ?: '127.0.0.1';
+$dbname = getenv('BLOOM_DB_NAME') ?: 'bloom_africa';
+$username = getenv('BLOOM_DB_USER') ?: 'root';
+$password = getenv('BLOOM_DB_PASS') ?: '';
+$port = getenv('BLOOM_DB_PORT') ?: '3306';
 
-// 2. Failsafe: Render often injects PostgreSQL 'dpg-' hosts into MySQL logic.
-// If the host looks like a Render PostgreSQL host (dpg-...), force it to the 'mysql' internal service name.
+// 2. Failsafe: Render Internal Network Handling
 if (strpos($host, 'dpg-') !== false && strpos($host, '.onrender.com') === false) {
     $host = 'mysql';
 }
 
 try {
-    $pdo = new PDO("mysql:host=$host", $username, $password);
+    // Specify port and host explicitly to force TCP (avoiding 'No such file or directory' socket errors)
+    $pdo = new PDO("mysql:host=$host;port=$port", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     // Create database if not exists
