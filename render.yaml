@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: bloom-restaurant
+    env: docker
+    region: ohio
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: bloom-db
+          property: host
+      - key: DB_NAME
+        fromDatabase:
+          name: bloom-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: bloom-db
+          property: user
+      - key: DB_PASS
+        fromDatabase:
+          name: bloom-db
+          property: password
+
+databases:
+  - name: bloom-db
+    plan: free
+    databaseName: bloom_africa
+    user: bloom_user
