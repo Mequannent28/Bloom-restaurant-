@@ -32,7 +32,7 @@ if ($host === 'localhost') {
 // 3. User-Friendly Connection Strategy
 $pdo = null;
 $conn_error = "";
-$possible_hosts = array_unique(array_filter([$host, 'mysql', 'mariadb', '127.0.0.1']));
+$possible_hosts = array_unique(array_filter([$host, 'mysql', 'mysql.internal', 'mariadb', '127.0.0.1']));
 
 foreach ($possible_hosts as $try_host) {
     // Hidden retries: Only 2 attempts (Fast Feedback)
