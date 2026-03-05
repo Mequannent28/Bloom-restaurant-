@@ -1,1 +1,4 @@
 FROM mariadb:10.6
+
+# Optimize for low-memory environments (512MB RAM)
+CMD ["mariadbd", "--innodb-buffer-pool-size=64M", "--performance-schema=OFF", "--innodb-log-buffer-size=1M", "--max-connections=20"]
