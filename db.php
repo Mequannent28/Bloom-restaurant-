@@ -29,66 +29,58 @@ if ($host === 'localhost') {
     $host = '127.0.0.1';
 }
 
-// 3. DNS Scouting & Connection Strategy
+// 3. Ultimate DNS Scouting & Connection Strategy
 $pdo = null;
 $conn_error = "";
-$possible_hosts = array_filter([$host, 'mysql', 'mariadb', 'db', '127.0.0.1']);
+// Simplified, unique list of common Render hostnames
+$possible_hosts = array_unique(array_filter([$host, 'mysql', 'mariadb', '127.0.0.1']));
 
-// Check if DATABASE_URL exists (often injected by Render)
-$db_url = getenv('DATABASE_URL');
-if ($db_url) {
-    if (strpos($db_url, 'mysql') !== false || strpos($db_url, 'mariadb') !== false) {
-        $url_parts = parse_url($db_url);
-        if (isset($url_parts['host'])) {
-            array_unshift($possible_hosts, $url_parts['host']);
-            if (isset($url_parts['user']))
-                $username = $url_parts['user'];
-            if (isset($url_parts['pass']))
-                $password = $url_parts['pass'];
-            if (isset($url_parts['path']))
-                $dbname = ltrim($url_parts['path'], '/');
-            if (isset($url_parts['port']))
-                $port = $url_parts['port'];
-        }
-    }
-}
+foreach ($possible_hosts as $try_host) {
+    // Total wait time per host: 2 minutes (30 attempts * 4s)
+    $max_wait_attempts = 30;
 
-foreach (array_unique($possible_hosts) as $try_host) {
-    // Persistent retry loop for each potential host
-    $max_attempts = 15; // Increased to 15 (15 * 4s = 60s total wait)
-    for ($i = 1; $i <= $max_attempts; $i++) {
+    for ($i = 1; $i <= $max_wait_attempts; $i++) {
         try {
             $dsn = "mysql:host=$try_host;port=$port;dbname=$dbname;charset=utf8mb4";
             $pdo = new PDO($dsn, $username, $password ?: '', [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_TIMEOUT => 3,
+                PDO::ATTR_TIMEOUT => 2,
             ]);
             if ($pdo)
-                break 2;
+                break 2; // SUCCESS! Stop everything and continue
         } catch (PDOException $e) {
             $conn_error = $e->getMessage();
 
+            // If DNS is broken (Host Unknown), move to NEXT host immediately
             if (strpos($conn_error, 'getaddrinfo') !== false || strpos($conn_error, 'not known') !== false) {
                 break;
             }
 
+            // If Connection Refused, the host exists but DB is still booting up.
+            // THIS IS THE KEY: We must be patient and wait.
             if (strpos($conn_error, 'refused') !== false) {
-                error_log("DB connecting to $try_host: Engine starting ($i/$max_attempts)...");
+                if ($i % 5 === 0) {
+                    error_log("Bloom DB: '$try_host' found but still starting up... ($i/$max_wait_attempts)");
+                }
                 sleep(4);
                 continue;
             }
 
+            // Other errors (like Access Denied/Wrong Password) are fatal
             break;
         }
     }
 }
 
 if (!$pdo) {
-    die("Critical Error: Database Connection Failed. 
-         Tried Hosts: " . implode(', ', $possible_hosts) . "
-         Last Error: $conn_error
-         
-         [FIX]: Ensure your database service in Render is named 'mysql' or provide the host in BLOOM_DB_HOST.");
+    echo "<div style='padding: 20px; background: #fff5f5; border: 1px solid #feb2b2; border-radius: 8px; font-family: sans-serif; max-width: 600px; margin: 40px auto;'>";
+    echo "<h2 style='color: #c53030; margin-top: 0;'>Database Still Waking Up</h2>";
+    echo "<p>Your Render database is currently performing its initial startup sequence. This usually takes 1-2 minutes on the Free plan.</p>";
+    echo "<p><strong>Details:</strong> $conn_error</p>";
+    echo "<hr style='border: none; border-top: 1px solid #feb2b2; margin: 15px 0;'>";
+    echo "<button onclick='window.location.reload()' style='background: #c53030; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;'>Try Refreshing Now</button>";
+    echo "</div>";
+    die();
 }
 
 
