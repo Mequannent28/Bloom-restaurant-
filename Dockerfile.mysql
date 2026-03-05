@@ -1,8 +1,12 @@
 FROM mariadb:10.6
 
 # Optimize for low-memory (512MB RAM) without breaking initialization
+# Removing indentation inside the echo to ensure valid .cnf formatting
 RUN echo '[mariadb]\n\
-    innodb_buffer_pool_size=64M\n\
+    innodb_buffer_pool_size=32M\n\
     performance_schema=OFF\n\
     innodb_log_buffer_size=1M\n\
-    max_connections=20\n' > /etc/mysql/conf.d/render_limits.cnf
+    max_connections=15\n\
+    key_buffer_size=8M\n\
+    query_cache_size=0\n\
+    query_cache_type=0\n' > /etc/mysql/conf.d/render_limits.cnf

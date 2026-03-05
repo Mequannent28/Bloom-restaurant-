@@ -65,27 +65,35 @@ foreach ($possible_hosts as $try_host) {
 }
 
 if (!$pdo) {
+    session_start();
+    $_SESSION['db_attempts'] = ($_SESSION['db_attempts'] ?? 0) + 1;
+    $attempt = $_SESSION['db_attempts'];
+
     echo "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'>";
-    echo "<title>Waking Up | Bloom Africa</title>";
+    echo "<title>Bloom Africa | Waking Up</title>";
     echo "<style>
-        body { background: #f7fafc; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: 'Inter', sans-serif; }
-        .box { padding: 40px; background: white; border-radius: 16px; text-shadow: none; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); max-width: 400px; width: 90%; transform: translateY(-20px); transition: all 0.3s ease; }
-        .icon { font-size: 50px; margin-bottom: 20px; animation: float 3s ease-in-out infinite; }
-        h2 { color: #1a202c; margin: 0 0 10px 0; font-size: 24px; }
-        p { color: #4a5568; line-height: 1.6; font-size: 15px; margin-bottom: 25px; }
-        .loader { height: 4px; width: 100%; background: #edf2f7; border-radius: 10px; overflow: hidden; position: relative; }
-        .bar { position: absolute; height: 100%; background: #c0991c; width: 30%; animation: slide 2s infinite linear; }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        @keyframes slide { from { left: -30%; } to { left: 100%; } }
+        body { background: #fdfdfd; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
+        .box { padding: 50px 30px; background: white; border-radius: 20px; text-align: center; box-shadow: 0 15px 40px rgba(0,0,0,0.05); max-width: 450px; width: 90%; }
+        .icon { font-size: 60px; margin-bottom: 25px; filter: drop-shadow(0 5px 15px rgba(0,0,0,0.1)); animation: pulse 2s infinite ease-in-out; }
+        h2 { color: #1a202c; margin-bottom: 12px; font-weight: 600; }
+        p { color: #718096; line-height: 1.6; font-size: 15px; }
+        .loader-container { margin: 30px auto; width: 100%; height: 6px; background: #f1f5f9; border-radius: 10px; overflow: hidden; position: relative; }
+        .loader-bar { position: absolute; height: 100%; width: 40%; background: linear-gradient(90deg, #c0991c, #d4af37); border-radius: 10px; animation: sweep 2.5s infinite linear; }
+        .status { color: #a0aec0; font-size: 12px; margin-top: 30px; border-top: 1px dashed #edf2f7; padding-top: 20px; }
+        @keyframes sweep { from { left: -40%; } to { left: 100%; } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
     </style></head><body>";
-    echo "<div class='box'><div class='icon'>☕</div><h2>Waking Up...</h2>";
-    echo "<p>We're preparing your experience. This takes about 60 seconds when starting fresh.</p>";
-    echo "<div class='loader'><div class='bar'></div></div>";
-    echo "<p style='font-size: 12px; color: #a0aec0; margin-top: 20px;'>Auto-refreshing until ready...</p></div>";
-    echo "<script>setTimeout(() => { window.location.reload(); }, 10000);</script>";
+    echo "<div class='box'><div class='icon'>✨</div><h2>Almost Ready</h2>";
+    echo "<p>Starting our secure database engines... This usually takes 60 seconds on the first load.</p>";
+    if ($attempt > 3)
+        echo "<p style='color: #c0991c; font-weight: 500;'>Service is taking a bit longer than usual, please stay with us.</p>";
+    echo "<div class='loader-container'><div class='loader-bar'></div></div>";
+    echo "<p class='status'>Auto-checking connection every 7s (Attempt #$attempt)...</p></div>";
+    echo "<script>setTimeout(() => { window.location.reload(); }, 7000);</script>";
     echo "</body></html>";
     die();
 }
+unset($_SESSION['db_attempts']); // Success, clear counter
 
 
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
