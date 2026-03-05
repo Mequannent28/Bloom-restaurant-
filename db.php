@@ -86,12 +86,18 @@ if (!$pdo) {
         @keyframes sweep { from { left: -40%; } to { left: 100%; } }
         @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
     </style></head><body>";
-    echo "<div class='box'><div class='icon'>✨</div><h2>Almost Ready</h2>";
-    echo "<p>Starting our secure database engines... This usually takes 60 seconds on the first load.</p>";
+    echo "<div class='box'>";
+    if ($attempt < 8) {
+        echo "<div class='icon'>✨</div><h2>Almost Ready</h2>";
+    } else {
+        echo "<div class='icon'>☕</div><h2>Finalizing Setup...</h2>";
+    }
+    echo "<p>Your secure database is performing its final internal checks. This usually takes 60-90 seconds.</p>";
     if ($attempt > 3)
-        echo "<p style='color: #c0991c; font-weight: 500;'>Service is taking a bit longer than usual, please stay with us.</p>";
+        echo "<p style='color: #d4af37; font-weight: 500; font-size: 14px;'>The server is found and responding. We're just waiting for the green light.</p>";
     echo "<div class='loader-container'><div class='loader-bar'></div></div>";
-    echo "<p class='status'>Auto-checking connection every 7s (Attempt #$attempt)...</p></div>";
+    echo "<p class='status'>Auto-checking connection every 7s (Attempt #$attempt)...</p>";
+    echo "<details style='margin-top: 15px; color: #cbd5e0; font-size: 10px;'><summary style='cursor:pointer'>Technical Log</summary><pre style='text-align: left; background: #f8fafc; padding: 10px; border-radius: 5px; overflow-x: auto;'>Host: $host\nError: $conn_error</pre></details></div>";
     echo "<script>setTimeout(() => { window.location.reload(); }, 7000);</script>";
     echo "</body></html>";
     die();
