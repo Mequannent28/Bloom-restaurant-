@@ -120,11 +120,9 @@ $features = $pdo->query("SELECT * FROM construction_features ORDER BY id DESC")-
             document.getElementById('featureIcon').value = 'fa-solid fa-check';
         }
     }
-
     function closeModal(id) {
         document.getElementById(id).style.display = 'none';
     }
-
     function editFeature(f) {
         openModal('featureModal');
         document.getElementById('modalTitle').innerText = 'Edit Highlight';

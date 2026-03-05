@@ -25,8 +25,8 @@ if ($host === 'localhost') {
 }
 
 // 3. Connection Loop with Retries
-$max_retries = 10; // Increased: Give it more time (10 * 10s = 100s)
-$retry_delay = 10; // Increased: Wait longer between attempts
+$max_retries = 5;
+$retry_delay = 3;
 $pdo = null;
 
 for ($i = 0; $i < $max_retries; $i++) {
@@ -34,18 +34,27 @@ for ($i = 0; $i < $max_retries; $i++) {
         $dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4";
         $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_TIMEOUT => 10,
-            PDO::ATTR_PERSISTENT => true
+            PDO::ATTR_TIMEOUT => 3, // Short timeout per attempt
         ];
         $pdo = new PDO($dsn, $username, $password ?: '', $options);
-        break; // Success!
+        break;
     } catch (PDOException $e) {
-        if ($i === $max_retries - 1) {
-            $diag_info = "\n\n[Render Troubleshooting]\n1. Ensure your MySQL service in Render is named exactly 'mysql'.\n2. Check if the MySQL service has successfully started (is 'Live').\n3. Actual Host Attempted: $host:$port";
-            die("Critical: Database connection failed. Error: " . $e->getMessage() . $diag_info);
+        $err = $e->getMessage();
+
+        // Fast-fail if host is unreachable/unknown - No point in waiting 100s
+        if (strpos($err, 'getaddrinfo failed') !== false || strpos($err, 'Name or service not known') !== false) {
+            if ($i === 0 && $host === 'mysql') {
+                // On some Render setups, '127.0.0.1' works better if linked via Docker
+                $host = '127.0.0.1';
+                continue;
+            }
         }
-        // Log attempt to help debugging
-        error_log("DB Connection Attempt " . ($i + 1) . " failed. Retrying in {$retry_delay}s...");
+
+        if ($i === $max_retries - 1) {
+            $diag = "\n\n[System Info]\nHost: $host\nEnv: " . (getenv('RENDER') ? 'Cloud' : 'Local');
+            die("Database Connection Error. The server is still starting up or the configuration is incorrect." . $diag);
+        }
+
         sleep($retry_delay);
     }
 }
