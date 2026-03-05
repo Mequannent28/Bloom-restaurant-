@@ -29,37 +29,61 @@ if ($host === 'localhost') {
     $host = '127.0.0.1';
 }
 
-// 3. Connection Strategy
+// 3. DNS Scouting & Connection Strategy
 $pdo = null;
 $conn_error = "";
-$max_attempts = 5;
+$possible_hosts = array_filter([$host, 'mysql', 'mariadb', 'db', '127.0.0.1']);
 
-for ($i = 1; $i <= $max_attempts; $i++) {
+// Check if DATABASE_URL exists (often injected by Render)
+$db_url = getenv('DATABASE_URL');
+if ($db_url) {
+    if (strpos($db_url, 'mysql') !== false || strpos($db_url, 'mariadb') !== false) {
+        $url_parts = parse_url($db_url);
+        if (isset($url_parts['host'])) {
+            array_unshift($possible_hosts, $url_parts['host']);
+            if (isset($url_parts['user']))
+                $username = $url_parts['user'];
+            if (isset($url_parts['pass']))
+                $password = $url_parts['pass'];
+            if (isset($url_parts['path']))
+                $dbname = ltrim($url_parts['path'], '/');
+            if (isset($url_parts['port']))
+                $port = $url_parts['port'];
+        }
+    }
+}
+
+foreach (array_unique($possible_hosts) as $try_host) {
     try {
-        $dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4";
+        $dsn = "mysql:host=$try_host;port=$port;dbname=$dbname;charset=utf8mb4";
         $pdo = new PDO($dsn, $username, $password ?: '', [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_TIMEOUT => 4,
+            PDO::ATTR_TIMEOUT => 2,
         ]);
         if ($pdo)
             break;
     } catch (PDOException $e) {
         $conn_error = $e->getMessage();
-
-        // Fast-fail on DNS errors
-        if (strpos($conn_error, 'getaddrinfo') !== false || strpos($conn_error, 'not known') !== false) {
-            die("Critical Error: Database server '$host' not found. Ensure your Render service is named exactly 'mysql'. Error: $conn_error");
-        }
-
-        if ($i < $max_attempts) {
-            error_log("DB Attempt $i failed: $conn_error. Retrying in 3s...");
-            sleep(3);
+        // If connection refused, wait once and try again
+        if (strpos($conn_error, 'refused') !== false) {
+            sleep(2);
+            try {
+                $pdo = new PDO($dsn, $username, $password ?: '', [PDO::ATTR_TIMEOUT => 2]);
+                if ($pdo)
+                    break;
+            } catch (PDOException $e2) {
+                $conn_error = $e2->getMessage();
+            }
         }
     }
 }
 
 if (!$pdo) {
-    die("Database Connection Error. MariaDB is likely still starting up or crashed. Error: $conn_error. [TIP]: Check Render MySQL logs for 'Out of Memory'.");
+    die("Critical Error: Database Connection Failed. 
+         Tried Hosts: " . implode(', ', $possible_hosts) . "
+         Last Error: $conn_error
+         
+         [FIX]: Ensure your database service in Render is named 'mysql' or provide the host in BLOOM_DB_HOST.");
 }
 
 

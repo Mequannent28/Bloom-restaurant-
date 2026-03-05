@@ -81,7 +81,6 @@ $features = $pdo->query("SELECT * FROM construction_features ORDER BY id DESC")-
                     placeholder="Briefly explain this advantage..."
                     style="width:100%; padding:12px; border:1px solid #ddd; border-radius:8px;"></textarea>
             </div>
-
             <div style="margin-bottom:25px;">
                 <label style="display:block; margin-bottom:8px; font-weight:600; color:#555;">Icon Class
                     (FontAwesome)</label>
@@ -96,7 +95,6 @@ $features = $pdo->query("SELECT * FROM construction_features ORDER BY id DESC")-
                 <p style="font-size:11px; color:#999; margin-top:5px;">Use classes from FontAwesome (e.g., fa-solid
                     fa-clock)</p>
             </div>
-
             <div style="display:flex; gap:15px;">
                 <button type="button" onclick="closeModal('featureModal')"
                     style="flex:1; padding:12px; border:1px solid #ddd; background:#fff; border-radius:8px; cursor:pointer; font-weight:600;">Cancel</button>
