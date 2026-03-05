@@ -30,38 +30,43 @@ if ($host === 'localhost') {
 }
 
 // 3. Connection Loop with Retries
-$max_retries = 5;
-$retry_delay = 3;
+$max_retries = 3;
+$retry_delay = 2;
 $pdo = null;
 
-for ($i = 0; $i < $max_retries; $i++) {
-    try {
-        $dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4";
-        $options = [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_TIMEOUT => 3, // Short timeout per attempt
-        ];
-        $pdo = new PDO($dsn, $username, $password ?: '', $options);
-        break;
-    } catch (PDOException $e) {
-        $err = $e->getMessage();
+// The hosts we will try in order
+$hosts_to_try = [$host];
+if ($host === 'mysql') {
+    $hosts_to_try[] = '127.0.0.1';
+    $hosts_to_try[] = 'localhost';
+}
 
-        // Fast-fail if host is unreachable/unknown - No point in waiting 100s
-        if (strpos($err, 'getaddrinfo failed') !== false || strpos($err, 'Name or service not known') !== false) {
-            if ($i === 0 && $host === 'mysql') {
-                // On some Render setups, '127.0.0.1' works better if linked via Docker
-                $host = '127.0.0.1';
-                continue;
+$conn_error = "";
+foreach ($hosts_to_try as $current_host) {
+    for ($i = 0; $i < $max_retries; $i++) {
+        try {
+            $dsn = "mysql:host=$current_host;port=$port;dbname=$dbname;charset=utf8mb4";
+            $options = [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_TIMEOUT => 3,
+            ];
+            $pdo = new PDO($dsn, $username, $password ?: '', $options);
+            break 2; // Success! Break both loops
+        } catch (PDOException $e) {
+            $conn_error = $e->getMessage();
+            // If it's a DNS error, don't retry this host, move to next host in the outer loop
+            if (strpos($conn_error, 'getaddrinfo failed') !== false || strpos($conn_error, 'Name or service not known') !== false) {
+                break;
             }
+            if ($i < $max_retries - 1)
+                sleep($retry_delay);
         }
-
-        if ($i === $max_retries - 1) {
-            $diag = "\n\n[System Info]\nHost: $host\nEnv: " . (getenv('RENDER') ? 'Cloud' : 'Local');
-            die("Database Connection Error. The server is still starting up or the configuration is incorrect." . $diag);
-        }
-
-        sleep($retry_delay);
     }
+}
+
+if (!$pdo) {
+    $diag = "\n\n[Troubleshooting]\n1. Diagnostics Page: /check_env.php\n2. Attempted Hosts: " . implode(' -> ', $hosts_to_try) . "\n3. Error: $conn_error";
+    die("Database Connection Error. Please verify your database service is running." . $diag);
 }
 
 
