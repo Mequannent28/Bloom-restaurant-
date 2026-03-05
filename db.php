@@ -65,13 +65,25 @@ foreach ($possible_hosts as $try_host) {
 }
 
 if (!$pdo) {
-    echo "<div style='padding: 30px; background: #fff; border-radius: 12px; font-family: sans-serif; max-width: 500px; margin: 100px auto; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.1);'>";
-    echo "<div style='font-size: 50px; margin-bottom: 20px;'>☕</div>";
-    echo "<h2 style='color: #2d3748; margin-top: 0;'>Server is Warming Up</h2>";
-    echo "<p style='color: #718096; line-height: 1.6;'>The database is currently initializing on Render. This usually takes about 60 seconds on the free plan.</p>";
-    echo "<button onclick='window.location.reload()' style='background: #4a5568; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background 0.2s;'>Check Again</button>";
-    echo "<p style='font-size: 11px; color: #cbd5e0; margin-top: 20px;'>Status: $conn_error</p>";
-    echo "</div>";
+    echo "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'>";
+    echo "<title>Waking Up | Bloom Africa</title>";
+    echo "<style>
+        body { background: #f7fafc; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; font-family: 'Inter', sans-serif; }
+        .box { padding: 40px; background: white; border-radius: 16px; text-shadow: none; text-align: center; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); max-width: 400px; width: 90%; transform: translateY(-20px); transition: all 0.3s ease; }
+        .icon { font-size: 50px; margin-bottom: 20px; animation: float 3s ease-in-out infinite; }
+        h2 { color: #1a202c; margin: 0 0 10px 0; font-size: 24px; }
+        p { color: #4a5568; line-height: 1.6; font-size: 15px; margin-bottom: 25px; }
+        .loader { height: 4px; width: 100%; background: #edf2f7; border-radius: 10px; overflow: hidden; position: relative; }
+        .bar { position: absolute; height: 100%; background: #c0991c; width: 30%; animation: slide 2s infinite linear; }
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes slide { from { left: -30%; } to { left: 100%; } }
+    </style></head><body>";
+    echo "<div class='box'><div class='icon'>☕</div><h2>Waking Up...</h2>";
+    echo "<p>We're preparing your experience. This takes about 60 seconds when starting fresh.</p>";
+    echo "<div class='loader'><div class='bar'></div></div>";
+    echo "<p style='font-size: 12px; color: #a0aec0; margin-top: 20px;'>Auto-refreshing until ready...</p></div>";
+    echo "<script>setTimeout(() => { window.location.reload(); }, 10000);</script>";
+    echo "</body></html>";
     die();
 }
 

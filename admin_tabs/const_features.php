@@ -10,7 +10,7 @@ $features = $pdo->query("SELECT * FROM construction_features ORDER BY id DESC")-
                 homepage.</p>
         </div>
         <button onclick="openModal('featureModal')" class="btn"
-            style="background: #f39c12; color: #fff; padding: 12px 25px; border-radius: 10px; font-weight: 600; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);">
+            style="background: #c0991cff; color: #fff; padding: 12px 25px; border-radius: 10px; font-weight: 600; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);">
             <i class="fa-solid fa-plus"></i> Add Highlight Item
         </button>
     </div>
