@@ -25,31 +25,27 @@ if ($host === 'localhost') {
 }
 
 // 3. Connection Loop with Retries
-$max_retries = 3; // Reduced for faster feedback
-$retry_delay = 2; // Reduced for faster feedback
+$max_retries = 10; // Increased: Give it more time (10 * 10s = 100s)
+$retry_delay = 10; // Increased: Wait longer between attempts
 $pdo = null;
 
 for ($i = 0; $i < $max_retries; $i++) {
     try {
-        // Attempt 1: Connect directly to the database
         $dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4";
         $options = [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_TIMEOUT => 5, // 5 second timeout
+            PDO::ATTR_TIMEOUT => 10,
+            PDO::ATTR_PERSISTENT => true
         ];
         $pdo = new PDO($dsn, $username, $password ?: '', $options);
         break; // Success!
     } catch (PDOException $e) {
-        // If the error is 'Name or service not known', it's a DNS issue
-        // If it's on Render and using 'mysql', maybe we should try 127.0.0.1 just in case it's a docker-link
-        if (strpos($e->getMessage(), 'getaddrinfo failed') !== false || strpos($e->getMessage(), 'Name or service not known') !== false) {
-            // Hostname resolution failed. On Render, this means the 'mysql' service is not found.
-        }
-
         if ($i === $max_retries - 1) {
-            $diag_info = "\n[Diagnostics] Host: $host, Port: $port, User: $username, env: " . (getenv('RENDER') ? 'Render' : 'Local');
+            $diag_info = "\n\n[Render Troubleshooting]\n1. Ensure your MySQL service in Render is named exactly 'mysql'.\n2. Check if the MySQL service has successfully started (is 'Live').\n3. Actual Host Attempted: $host:$port";
             die("Critical: Database connection failed. Error: " . $e->getMessage() . $diag_info);
         }
+        // Log attempt to help debugging
+        error_log("DB Connection Attempt " . ($i + 1) . " failed. Retrying in {$retry_delay}s...");
         sleep($retry_delay);
     }
 }
